@@ -57,9 +57,53 @@ public class MediaPlugin extends Plugin {
     private static final int API_LEVEL_33 = 33;
 
     // @todo
-    @PluginMethod
+    @PluginMethod()
     public void getMedias(PluginCall call) {
-        call.unimplemented();
+        Log.d("DEBUG LOG", "GET MEDIAS");
+        if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            //call.unimplemented();
+            Log.d("DEBUG LOG", "HAS PERMISSION");
+            _getMedias(call);
+        }else{
+            Log.d("DEBUG LOG", "NOT ALLOWED");
+            pluginRequestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, 1986);
+        }
+    }
+
+    // @todo Add creationDate, fullWidth, fullHeight, thumbnailWidth, thumbnailHeight, location
+    private void _getMedias(PluginCall call){
+        JSObject response = new JSObject();
+        JSArray assets = new JSArray();
+
+        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+        String[] projection = {
+        MediaStore.Images.Media._ID,
+        MediaStore.Images.Media.DATA,
+        };
+
+        Cursor cursor = getActivity().getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media._ID + " DESC");
+
+        int columnIndexId = cursor.getColumnIndex(MediaStore.Images.Media._ID);
+        int columnIndexURI = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
+
+        int start = 0;
+
+        int quantity = call.getInt("quantity");
+        if(quantity == 0) quantity = 20;
+
+        cursor.moveToPosition(start-1); // From Index
+        while (cursor.moveToNext() && cursor.getPosition() < start + quantity) { // To Index
+        JSObject asset = new JSObject();
+        asset.put("identifier", cursor.getString(columnIndexId));
+        asset.put("data", cursor.getString(columnIndexURI)); // return filepath, have to convert Capacitor.convertFileSrc() to use in HTML & Javascript
+        assets.put(asset);
+        }
+
+        cursor.close();
+
+        response.put("medias", assets);
+        call.resolve(response);
     }
 
     @PluginMethod
