@@ -181,7 +181,7 @@ public class MediaPlugin extends Plugin {
         }
 
         switch (call.getMethodName()) {
-            case "getMedias" -> call.unimplemented();
+            case "getMedias" -> _getMedias(call);
             case "getAlbums" -> _getAlbums(call);
             case "savePhoto", "saveVideo", "saveGif" -> _saveMedia(call);
             case "createAlbum" -> _createAlbum(call);
