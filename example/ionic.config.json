@@ -1,0 +1,7 @@
+{
+  "name": "Media Example",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
