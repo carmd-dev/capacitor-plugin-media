@@ -60,13 +60,24 @@ public class MediaPlugin extends Plugin {
     @PluginMethod()
     public void getMedias(PluginCall call) {
         Log.d("DEBUG LOG", "GET MEDIAS");
-        if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            //call.unimplemented();
-            Log.d("DEBUG LOG", "HAS PERMISSION");
-            _getMedias(call);
-        }else{
-            Log.d("DEBUG LOG", "NOT ALLOWED");
-            pluginRequestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, 1986);
+        if (Build.VERSION.SDK_INT >= API_LEVEL_33) {
+            if (hasPermission(Manifest.permission.READ_MEDIA_IMAGES)) {
+                //call.unimplemented();
+                Log.d("DEBUG LOG", "HAS PERMISSION");
+                _getMedias(call);
+            }else{
+                Log.d("DEBUG LOG", "NOT ALLOWED");
+                pluginRequestPermission(Manifest.permission.READ_MEDIA_IMAGES, 1986);
+            }
+        } else {
+            if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                //call.unimplemented();
+                Log.d("DEBUG LOG", "HAS PERMISSION");
+                _getMedias(call);
+            }else{
+                Log.d("DEBUG LOG", "NOT ALLOWED");
+                pluginRequestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, 1986);
+            }
         }
     }
 
