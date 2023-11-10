@@ -17,7 +17,7 @@
         ],
         "returns": "any",
         "tags": [],
-        "docs": "Get filtered media from camera roll (pictures only currently). iOS only.\n\n[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)",
+        "docs": "Get filtered media from camera roll (pictures only currently).\n\n[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)",
         "complexTypes": [
           "MediaFetchOptions",
           "MediaResponse"

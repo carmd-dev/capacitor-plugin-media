@@ -84,7 +84,7 @@ Unless otherwise noted, there should be full feature parity between iOS and Andr
 getMedias(options?: MediaFetchOptions | undefined) => Promise<MediaResponse>
 ```
 
-Get filtered media from camera roll (pictures only currently). iOS only.
+Get filtered media from camera roll (pictures only currently).
 
 [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
 
