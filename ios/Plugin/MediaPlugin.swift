@@ -93,63 +93,31 @@ public class MediaPlugin: CAPPlugin {
 
         checkAuthorization(permission: .addOnly, allowed: {
             // Add it to the photo library.
-            var image: UIImage? = nil;
-            let url = URL(string: data)
-            var data = try? Data(contentsOf: url!)
-            let mutableData = NSMutableData() // Output data buffer
-            if (data != nil) {
-                // Get image metadata
-                let imgSource = CGImageSourceCreateWithData(data! as CFData, .none)
-                if (imgSource == nil) {
-                    call.reject("Loading image data failed!")
-                    return
-                }
-                
-                let metadata = CGImageSourceCopyPropertiesAtIndex(imgSource!, 0, .none)
-                
-                // Convert image to PNG
-                image = UIImage(data: data!)
-                data = image?.sd_imageData(as: .PNG)
-                if (data != nil) {
-                    image = UIImage(data: data!)
-                } else {
-                    call.reject("Image conversion to PNG failed!")
-                    return
-                }
-                
-                // Create data buffer with image and metadata
-                let imgDest = CGImageDestinationCreateWithData(mutableData as CFMutableData, "public.png" as CFString, 1, nil)
-                if (imgDest == nil) {
-                    call.reject("Creating output image data buffer failed!")
-                    return
-                }
-                
-                CGImageDestinationAddImage(imgDest!, image!.cgImage!, metadata)
-                let finished = CGImageDestinationFinalize(imgDest!)
-                if (!finished) {
-                    call.reject("Saving output image failed!")
-                    return
-                }
-            } else {
-                call.reject("Could not convert fileURL into Data");
-                return
-            }
-            
-            PHPhotoLibrary.shared().performChanges({
-                let creationRequest = PHAssetCreationRequest.forAsset()
-                creationRequest.addResource(with: .photo, data: mutableData as Data, options: .none)
+            let imageUrl = URL(string: data)
+            let downloaderOptions: SDWebImageDownloaderOptions = [.ignoreCachedResponse]
 
-                if let collection = targetCollection {
-                    let addAssetRequest = PHAssetCollectionChangeRequest(for: collection)
-                    addAssetRequest?.addAssets([creationRequest.placeholderForCreatedAsset! as Any] as NSArray)
+            SDWebImageDownloader.shared.downloadImage(with: imageUrl, options: downloaderOptions, progress: nil) { (image, data, error, finished) in
+                guard let imageData = data, finished else {
+                   call.reject("Unable to download image from url")
+                   return
                 }
-            }, completionHandler: {success, error in
-                if !success {
-                    call.reject("Unable to save image to album")
-                } else {
-                    call.resolve()
-                }
-            })
+
+                PHPhotoLibrary.shared().performChanges({
+                    let creationRequest = PHAssetCreationRequest.forAsset()
+                    creationRequest.addResource(with: .photo, data: imageData as Data, options: .none)
+
+                    if let collection = targetCollection {
+                        let addAssetRequest = PHAssetCollectionChangeRequest(for: collection)
+                        addAssetRequest?.addAssets([creationRequest.placeholderForCreatedAsset! as Any] as NSArray)
+                    }
+                }, completionHandler: {success, error in
+                    if !success {
+                        call.reject("Unable to save image to album")
+                    } else {
+                        call.resolve()
+                    }
+                })
+           }
         }, notAllowed: {
             call.reject("Access to photos not allowed by user")
         })
@@ -221,62 +189,11 @@ public class MediaPlugin: CAPPlugin {
     }
 
     @objc func saveGif(_ call: CAPPluginCall) {
-        guard let data = call.getString("path") else {
-            call.reject("Must provide the data path")
-            return
-        }
-
-        let albumId = call.getString("albumIdentifier")
-        var targetCollection: PHAssetCollection?
-
-        if albumId != nil {
-            let albumFetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId!], options: nil)
-            albumFetchResult.enumerateObjects({ (collection, count, _) in
-                targetCollection = collection
-            })
-            if targetCollection == nil {
-                call.reject("Unable to find that album")
-                return
-            }
-            if !targetCollection!.canPerform(.addContent) {
-                call.reject("Album doesn't support adding content (is this a smart album?)")
-                return
-            }
-        }
-
-        checkAuthorization(permission: .addOnly, allowed: {
-            // Write to a temp location first if not on disk -- required for playable GIFs
-            var fileURL = URL(string: data)
-            if !data.starts(with: "file://") {
-                let directory = NSTemporaryDirectory()
-                let fileName = NSUUID().uuidString + ".gif"
-                fileURL = NSURL.fileURL(withPathComponents: [directory, fileName])
-                
-                let url = URL(string: data)
-                let data = try! Data(contentsOf: url!)
-                try! data.write(to: fileURL!)
-            }
-            
-            // Add it to the photo library.
-            PHPhotoLibrary.shared().performChanges({
-                let creationRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: fileURL! as URL)
-
-                if let collection = targetCollection {
-                    let addAssetRequest = PHAssetCollectionChangeRequest(for: collection)
-                    addAssetRequest?.addAssets([creationRequest?.placeholderForCreatedAsset! as Any] as NSArray)
-                }
-
-            }, completionHandler: {success, error in
-                if !success {
-                    call.reject("Unable to save gif to album")
-                } else {
-                    //TODO: return fileUri
-                    call.resolve()
-                }
-            })
-        }, notAllowed: {
-            call.reject("Access to photos not allowed by user")
-        })
+        savePhoto(call)
+    }
+        
+    @objc func getAlbumsPath(_ call: CAPPluginCall) {
+        call.unimplemented("Not implemented on iOS.")
     }
     
     @available(iOS 14, *)
@@ -368,6 +285,15 @@ public class MediaPlugin: CAPPlugin {
         let options = PHFetchOptions()
         options.fetchLimit = quantity
         
+        let types = call.getString("types") ?? MediaPlugin.DEFAULT_TYPES
+        if types == "photos" {
+            options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        } else if types == "videos" {
+            options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
+        } else if types == "all" {
+            options.predicate = NSPredicate(format: "(mediaType == %d) || (mediaType == %d)", argumentArray: [PHAssetMediaType.image.rawValue, PHAssetMediaType.video.rawValue])
+        }
+        
         // Set sort
         var sortDescriptors = [] as [NSSortDescriptor];
         
@@ -411,9 +337,6 @@ public class MediaPlugin: CAPPlugin {
             fetchResult = PHAsset.fetchAssets(with: options)
         }
 
-        //let after = call.getString("after")
-
-        let types = call.getString("types") ?? MediaPlugin.DEFAULT_TYPES
         let thumbnailWidth = call.getInt("thumbnailWidth", MediaPlugin.DEFAULT_THUMBNAIL_WIDTH)
         let thumbnailHeight = call.getInt("thumbnailHeight", MediaPlugin.DEFAULT_THUMBNAIL_HEIGHT)
         let thumbnailSize = CGSize(width: thumbnailWidth, height: thumbnailHeight)
@@ -425,14 +348,6 @@ public class MediaPlugin: CAPPlugin {
         requestOptions.isSynchronous = true
 
         fetchResult.enumerateObjects({ (asset, count: Int, stop: UnsafeMutablePointer<ObjCBool>) in
-
-            if asset.mediaType == .image && types == "videos" {
-                return
-            }
-            if asset.mediaType == .video && types == "photos" {
-                return
-            }
-
             var a = JSObject()
 
             self.imageManager.requestImage(for: asset, targetSize: thumbnailSize, contentMode: .aspectFill, options: requestOptions, resultHandler: { (fetchedImage, _) in
@@ -442,7 +357,6 @@ public class MediaPlugin: CAPPlugin {
 
                 a["identifier"] = asset.localIdentifier
 
-                // TODO: We need to know original type
                 a["data"] = image.jpegData(compressionQuality: CGFloat(thumbnailQuality) / 100.0)?.base64EncodedString()
 
                 if asset.creationDate != nil {
@@ -453,6 +367,7 @@ public class MediaPlugin: CAPPlugin {
                 a["thumbnailWidth"] = image.size.width
                 a["thumbnailHeight"] = image.size.height
                 a["location"] = self.makeLocation(asset)
+                a["type"] = asset.mediaType == .image ? "photo" : "video"
 
                 assets.append(a)
             })

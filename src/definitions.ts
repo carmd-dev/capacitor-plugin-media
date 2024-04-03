@@ -1,6 +1,6 @@
 export interface MediaPlugin {
   /**
-    * Get filtered media from camera roll (pictures only currently).
+    * Get filtered thumbnails from camera roll.
     * 
     * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
     */
@@ -19,7 +19,6 @@ export interface MediaPlugin {
    * On Android, all image formats supported by the user's photo viewer are supported.
    * 
    * On iOS, [all image formats supported by SDWebImage are supported.](https://github.com/SDWebImage/SDWebImage#supported-image-formats)
-   * All images on iOS are converted to PNG for system compatability. 
    * 
    * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
    */
@@ -51,6 +50,19 @@ export interface MediaPlugin {
    * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/CreateDemoAlbum.tsx)
    */
   createAlbum(options: MediaAlbumCreate): Promise<void>;
+  /**
+   * Gets the path where album folders and their corresponding photos
+   * are stored on the Android filesystem. This can be used to identify
+   * your album by more than just its name on Android, in case there
+   * are multiple albums with the same name, which is possible on Android.
+   * Just compare the albums path to the start of the album identifier when
+   * getting albums.
+   * 
+   * Only available on Android.
+   * 
+   * Code Examples: [basic](https://github.com/capacitor-community/media/blob/master/example/src/components/CreateDemoAlbum.tsx), [when saving media](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
+   */
+  getAlbumsPath(): Promise<AlbumsPathResponse>;
 }
 
 export interface MediaSaveOptions {
@@ -77,7 +89,7 @@ export interface MediaSaveOptions {
 
 export interface MediaFetchOptions {
   /**
-   * The number of photos to fetch, sorted by last created date descending
+   * The number of photos to fetch, sorted by last created date descending. To paginate, just request a higher quantity -- OS caching should make this relatively performant.
    */
   quantity?: number;
   /**
@@ -93,9 +105,9 @@ export interface MediaFetchOptions {
    */
   thumbnailQuality?: number;
   /**
-   * Which types of assets to return. Only photos supported currently.
+   * Which types of assets to return thumbnails for.
    */
-  types?: "photos";
+  types?: "photos" | "videos" | "all";
   /**
    * Which album identifier to query in (get identifier with getAlbums())
    */
@@ -129,6 +141,10 @@ export type MediaField =
 
 export interface MediaResponse {
   medias: MediaAsset[];
+}
+
+export interface AlbumsPathResponse {
+  path: string;
 }
 
 export interface MediaAsset {

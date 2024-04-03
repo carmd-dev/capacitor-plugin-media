@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/maintenance/yes/2023?style=flat-square" />
+  <img src="https://img.shields.io/maintenance/yes/2024?style=flat-square" />
   <a href="https://www.npmjs.com/package/@capacitor-community/media"><img src="https://img.shields.io/npm/l/@capacitor-community/media?style=flat-square" /></a>
 <br>
   <a href="https://www.npmjs.com/package/@capacitor-community/media"><img src="https://img.shields.io/npm/dw/@capacitor-community/media?style=flat-square" /></a>
@@ -70,6 +70,7 @@ Unless otherwise noted, there should be full feature parity between iOS and Andr
 * [`saveVideo(...)`](#savevideo)
 * [`saveGif(...)`](#savegif)
 * [`createAlbum(...)`](#createalbum)
+* [`getAlbumsPath()`](#getalbumspath)
 * [Interfaces](#interfaces)
 * [Enums](#enums)
 
@@ -84,7 +85,7 @@ Unless otherwise noted, there should be full feature parity between iOS and Andr
 getMedias(options?: MediaFetchOptions | undefined) => Promise<MediaResponse>
 ```
 
-Get filtered media from camera roll (pictures only currently).
+Get filtered thumbnails from camera roll. iOS only.
 
 [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
 
@@ -125,7 +126,6 @@ On Android and iOS, this supports web URLs, base64 encoded images
 On Android, all image formats supported by the user's photo viewer are supported.
 
 On iOS, [all image formats supported by SDWebImage are supported.](https://github.com/SDWebImage/SDWebImage#supported-image-formats)
-All images on iOS are converted to PNG for system compatability. 
 
 [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
 
@@ -202,6 +202,28 @@ Creates an album.
 --------------------
 
 
+### getAlbumsPath()
+
+```typescript
+getAlbumsPath() => Promise<AlbumsPathResponse>
+```
+
+Gets the path where album folders and their corresponding photos
+are stored on the Android filesystem. This can be used to identify
+your album by more than just its name on Android, in case there
+are multiple albums with the same name, which is possible on Android.
+Just compare the albums path to the start of the album identifier when
+getting albums.
+
+Only available on Android.
+
+Code Examples: [basic](https://github.com/capacitor-community/media/blob/master/example/src/components/CreateDemoAlbum.tsx), [when saving media](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
+
+**Returns:** <code>Promise&lt;<a href="#albumspathresponse">AlbumsPathResponse</a>&gt;</code>
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -239,15 +261,15 @@ Creates an album.
 
 #### MediaFetchOptions
 
-| Prop                   | Type                                                                                                                                                                                     | Description                                                           |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| **`quantity`**         | <code>number</code>                                                                                                                                                                      | The number of photos to fetch, sorted by last created date descending |
-| **`thumbnailWidth`**   | <code>number</code>                                                                                                                                                                      | The width of thumbnail to return                                      |
-| **`thumbnailHeight`**  | <code>number</code>                                                                                                                                                                      | The height of thumbnail to return                                     |
-| **`thumbnailQuality`** | <code>number</code>                                                                                                                                                                      | The quality of thumbnail to return as JPEG (0-100)                    |
-| **`types`**            | <code>"photos"</code>                                                                                                                                                                    | Which types of assets to return. Only photos supported currently.     |
-| **`albumIdentifier`**  | <code>string</code>                                                                                                                                                                      | Which album identifier to query in (get identifier with getAlbums())  |
-| **`sort`**             | <code>"mediaType" \| "mediaSubtypes" \| "sourceType" \| "pixelWidth" \| "pixelHeight" \| "creationDate" \| "modificationDate" \| "isFavorite" \| "burstIdentifier" \| MediaSort[]</code> | Sort order of returned assets by field and ascending/descending       |
+| Prop                   | Type                                                                                                                                                                                     | Description                                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`quantity`**         | <code>number</code>                                                                                                                                                                      | The number of photos to fetch, sorted by last created date descending. To paginate, just request a higher quantity -- OS caching should make this relatively performant. |
+| **`thumbnailWidth`**   | <code>number</code>                                                                                                                                                                      | The width of thumbnail to return                                                                                                                                         |
+| **`thumbnailHeight`**  | <code>number</code>                                                                                                                                                                      | The height of thumbnail to return                                                                                                                                        |
+| **`thumbnailQuality`** | <code>number</code>                                                                                                                                                                      | The quality of thumbnail to return as JPEG (0-100)                                                                                                                       |
+| **`types`**            | <code>"photos" \| "videos" \| "all"</code>                                                                                                                                               | Which types of assets to return thumbnails for.                                                                                                                          |
+| **`albumIdentifier`**  | <code>string</code>                                                                                                                                                                      | Which album identifier to query in (get identifier with getAlbums())                                                                                                     |
+| **`sort`**             | <code>"mediaType" \| "mediaSubtypes" \| "sourceType" \| "pixelWidth" \| "pixelHeight" \| "creationDate" \| "modificationDate" \| "isFavorite" \| "burstIdentifier" \| MediaSort[]</code> | Sort order of returned assets by field and ascending/descending                                                                                                          |
 
 
 #### MediaSort
@@ -295,6 +317,13 @@ Creates an album.
 | Prop       | Type                |
 | ---------- | ------------------- |
 | **`name`** | <code>string</code> |
+
+
+#### AlbumsPathResponse
+
+| Prop       | Type                |
+| ---------- | ------------------- |
+| **`path`** | <code>string</code> |
 
 
 ### Enums
