@@ -3,7 +3,7 @@ import { Media, MediaSaveOptions } from "@capacitor-community/media";
 import { IonButton } from "@ionic/react";
 import { Camera, CameraResultType } from "@capacitor/camera";
 import { photoDataURI, gifDataURI, videoDataURI, webpDataURI } from "./data";
-import { FilePicker } from "@whiteguru/capacitor-plugin-file-picker";
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { Capacitor } from "@capacitor/core";
 
 const SaveMedia = () => {
@@ -41,6 +41,24 @@ const SaveMedia = () => {
         setStatus("Saved photo from online source URL!");
     };
 
+    const savePhotoOnlineNoExt = async () => {
+        setStatus("");
+        let opts: MediaSaveOptions = { path: "https://images.unsplash.com/photo-1704072383476-edc7ad1acb84", albumIdentifier: await ensureDemoAlbum() };
+        await Media.savePhoto(opts);
+        setStatus("Saved photo from online source URL (no extension)!");
+    };
+
+    const saveInvalidPhotoOnline = async () => {
+        setStatus("");
+        let opts: MediaSaveOptions = { path: "https://example.com/invalid_image.png", albumIdentifier: await ensureDemoAlbum() };
+        try {
+            await Media.savePhoto(opts);
+            setStatus("Saved photo from online source URL (should not have worked).")
+        } catch (e: any) {
+            setStatus("Error! Got error code: " + e.code);
+        }
+    };
+
     const savePhotoDataURI = async () => {
         setStatus("");
         let opts: MediaSaveOptions = { path: photoDataURI, albumIdentifier: await ensureDemoAlbum(), fileName: "fromDataURI" };
@@ -70,26 +88,29 @@ const SaveMedia = () => {
     const saveGIFDataURI = async () => {
         setStatus("");
         let opts: MediaSaveOptions = { path: gifDataURI, albumIdentifier: await ensureDemoAlbum() };
-        await Media.saveGif(opts);
+        await Media.savePhoto(opts);
         setStatus("Saved GIF from data URI!");
     };
 
     const saveGIFOnline = async () => {
         setStatus("");
         let opts: MediaSaveOptions = { path: "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif", albumIdentifier: await ensureDemoAlbum() };
-        await Media.saveGif(opts);
+        await Media.savePhoto(opts);
         setStatus("Saved GIF from online source URL!");
     };
 
     const saveTakenVideo = async () => {
         setStatus("");
-        const videos = await FilePicker.pick({
-            mimes: ["video/*"],
-            multiple: false
-        });
+        const videos = await FilePicker.pickVideos({ readData: true });
+        let data = videos.files[0].data;
+        let mimeType = videos.files[0].mimeType;
 
-        let path = videos.files[0].path;
-        let opts: MediaSaveOptions = { path, albumIdentifier: await ensureDemoAlbum() };
+        if (!data) {
+            throw new Error("video data does not exist");
+        }
+
+        const blobUrl = "data:" + mimeType + ";base64," + data;
+        let opts: MediaSaveOptions = { path: blobUrl, albumIdentifier: await ensureDemoAlbum() };
         await Media.saveVideo(opts);
         setStatus("Re-saved video from camera roll!");
     };
@@ -111,6 +132,8 @@ const SaveMedia = () => {
     return <>
         { Capacitor.getPlatform() === "ios" && <IonButton onClick={savePhotoOnlineNoAlbum}>Save Photo to Library (No Album)</IonButton> }
         <IonButton onClick={savePhotoOnline}>Save Photo from online URL</IonButton>
+        <IonButton onClick={savePhotoOnlineNoExt}>Save Photo from online URL (no ext)</IonButton>
+        <IonButton onClick={saveInvalidPhotoOnline}>Try to Save Photo at Invalid URL</IonButton>
         <IonButton onClick={savePhotoDataURI}>Save Photo from Data URI</IonButton>
         <IonButton onClick={saveWebPDataURI}>Save WebP from Data URI</IonButton>
         <IonButton onClick={saveTakenPhoto}>Save Photo from Camera</IonButton>

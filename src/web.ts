@@ -5,6 +5,7 @@ import type {
   MediaAlbumCreate,
   MediaAlbumResponse,
   MediaFetchOptions,
+  MediaPath,
   MediaPlugin,
   MediaResponse,
   MediaSaveOptions,
@@ -16,6 +17,10 @@ export class MediaWeb extends WebPlugin implements MediaPlugin {
     console.log('getMedias', options);
     throw this.unimplemented('Not implemented on web.');
   }
+  getMediaByIdentifier(options: any): Promise<MediaPath> {
+    console.log('getMediaByIdentifier', options);
+    throw this.unimplemented('Not implemented on web.');
+  }
   getAlbums(): Promise<MediaAlbumResponse> {
     throw this.unimplemented('Not implemented on web.');
   }
@@ -25,10 +30,6 @@ export class MediaWeb extends WebPlugin implements MediaPlugin {
   }
   saveVideo(options?: MediaSaveOptions): Promise<PhotoResponse> {
     console.log('saveVideo', options);
-    throw this.unimplemented('Not implemented on web.');
-  }
-  saveGif(options?: MediaSaveOptions): Promise<PhotoResponse> {
-    console.log('saveGif', options);
     throw this.unimplemented('Not implemented on web.');
   }
   createAlbum(options: MediaAlbumCreate): Promise<void> {

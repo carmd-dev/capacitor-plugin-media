@@ -1,10 +1,19 @@
 export interface MediaPlugin {
   /**
-    * Get filtered thumbnails from camera roll.
+    * Get filtered thumbnails from camera roll. iOS only.
     * 
     * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
     */
   getMedias(options?: MediaFetchOptions): Promise<MediaResponse>;
+  /**
+    * Get a filesystem path to a full-quality media asset by its identifier. iOS only.
+    * This is not included for Android because on Android, a media asset's identifier IS its path!
+    * You can simply use the Filesystem plugin to work with it. On iOS, you have to turn the identifier into a path
+    * using this function. After that, you can use the Filesystem plugin, same as Android.
+    * 
+    * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
+    */
+  getMediaByIdentifier(options?: { identifier: string }): Promise<MediaPath>;
   /**
     * Get list of albums. 
     * 
@@ -12,13 +21,12 @@ export interface MediaPlugin {
     */
   getAlbums(): Promise<MediaAlbumResponse>;
   /**
-   * Saves a photo to the camera roll.
+   * Saves a still photo or GIF to the camera roll.
    * 
    * On Android and iOS, this supports web URLs, base64 encoded images 
    * (e.g. data:image/jpeg;base64,...), and local files.
    * On Android, all image formats supported by the user's photo viewer are supported.
-   * 
-   * On iOS, [all image formats supported by SDWebImage are supported.](https://github.com/SDWebImage/SDWebImage#supported-image-formats)
+   * On iOS, most common image formats are supported.
    * 
    * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
    */
@@ -34,16 +42,6 @@ export interface MediaPlugin {
    * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
    */
   saveVideo(options?: MediaSaveOptions): Promise<PhotoResponse>;
-  /**
-   * Saves an animated GIF to the camera roll.
-   * 
-   * On Android and iOS, this supports web URLs, base64 encoded GIFs 
-   * (e.g. data:image/gif;base64,...), and local files.
-   * This only supports GIF files specifically.
-   * 
-   * [Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
-   */
-  saveGif(options?: MediaSaveOptions): Promise<PhotoResponse>;
   /**
    * Creates an album.
    * 
@@ -180,6 +178,17 @@ export interface MediaAsset {
    * Location metadata for the asset
    */
   location: MediaLocation;
+}
+
+export interface MediaPath {
+  /**
+   * Path to media asset
+   */
+  path: string;
+  /**
+   * Identifier for media asset
+   */
+  identifier: string;
 }
 
 export interface MediaLocation {

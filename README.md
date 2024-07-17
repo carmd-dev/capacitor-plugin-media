@@ -2,7 +2,7 @@
 <h3 align="center">Capacitor Media</h3>
 <p align="center"><strong><code>@capacitor-community/media</code></strong></p>
 <p align="center">
-  Capacitor community plugin for enabling extra media capabilities
+  Capacitor plugin for saving and retrieving photos and videos, and managing photo albums.
 </p>
 
 <p align="center">
@@ -12,7 +12,7 @@
   <a href="https://www.npmjs.com/package/@capacitor-community/media"><img src="https://img.shields.io/npm/dw/@capacitor-community/media?style=flat-square" /></a>
   <a href="https://www.npmjs.com/package/@capacitor-community/media"><img src="https://img.shields.io/npm/v/@capacitor-community/media?style=flat-square" /></a>
   <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-<a href="#contributors"><img src="https://img.shields.io/badge/all%20contributors-10-orange?style=flat-square" /></a>
+<a href="#contributors"><img src="https://img.shields.io/badge/all%20contributors-12-orange?style=flat-square" /></a>
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 </p>
@@ -43,20 +43,19 @@
 
 ## Installation
 
-Run one of the following commands, based on what you're using:
-
 ```bash
-npm install @capacitor-community/media # NPM
-yarn add @capacitor-community/media # Yarn
+npm install @capacitor-community/media
 ```
 
-This plugin is currently for Capacitor 5. Add an `@4` at the end to install for Capacitor 4.
+This plugin is currently for Capacitor 6. Add an `@5` at the end to install for Capacitor 5.
 
 After installing, be sure to sync by running `ionic cap sync`.
 
-## Migrating to Capacitor 5
+## Migrating to Capacitor 6
 
-**A major breaking change has been made to this plugin:** Saving media on Android now takes an album identifier instead of an album name. The album identifier, like on iOS, can be obtained using `getAlbums()`. (This call will now also return empty albums made by the plugin.) To ensure people notice this significant change, the property has been renamed from `album` to `albumIdentifier`, which will need to be updated in your code. It is still optional on iOS.
+There are a few breaking changes to take note of:
+- `saveGif` no longer exists. Use `savePhoto` for images and GIFs.
+- Error text has been changed. If you were checking for specific error messages, you should now use `error.code`, which will be `accessDenied`, `argumentError`, `downloadError`, or `filesystemError`.
 
 ## API
 
@@ -65,10 +64,10 @@ Unless otherwise noted, there should be full feature parity between iOS and Andr
 <docgen-index>
 
 * [`getMedias(...)`](#getmedias)
+* [`getMediaByIdentifier(...)`](#getmediabyidentifier)
 * [`getAlbums()`](#getalbums)
 * [`savePhoto(...)`](#savephoto)
 * [`saveVideo(...)`](#savevideo)
-* [`saveGif(...)`](#savegif)
 * [`createAlbum(...)`](#createalbum)
 * [`getAlbumsPath()`](#getalbumspath)
 * [Interfaces](#interfaces)
@@ -87,13 +86,35 @@ getMedias(options?: MediaFetchOptions | undefined) => Promise<MediaResponse>
 
 Get filtered thumbnails from camera roll. iOS only.
 
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetMedias.tsx)
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/GetMedias.tsx)
 
 | Param         | Type                                                            |
 | ------------- | --------------------------------------------------------------- |
 | **`options`** | <code><a href="#mediafetchoptions">MediaFetchOptions</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#mediaresponse">MediaResponse</a>&gt;</code>
+
+--------------------
+
+
+### getMediaByIdentifier(...)
+
+```typescript
+getMediaByIdentifier(options?: { identifier: string; } | undefined) => Promise<MediaPath>
+```
+
+Get a filesystem path to a full-quality media asset by its identifier. iOS only.
+This is not included for Android because on Android, a media asset's identifier IS its path!
+You can simply use the Filesystem plugin to work with it. On iOS, you have to turn the identifier into a path
+using this function. After that, you can use the Filesystem plugin, same as Android.
+
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/GetMedias.tsx)
+
+| Param         | Type                                 |
+| ------------- | ------------------------------------ |
+| **`options`** | <code>{ identifier: string; }</code> |
+
+**Returns:** <code>Promise&lt;<a href="#mediapath">MediaPath</a>&gt;</code>
 
 --------------------
 
@@ -106,7 +127,7 @@ getAlbums() => Promise<MediaAlbumResponse>
 
 Get list of albums. 
 
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/GetAlbums.tsx)
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/GetAlbums.tsx)
 
 **Returns:** <code>Promise&lt;<a href="#mediaalbumresponse">MediaAlbumResponse</a>&gt;</code>
 
@@ -119,15 +140,14 @@ Get list of albums.
 savePhoto(options?: MediaSaveOptions | undefined) => Promise<PhotoResponse>
 ```
 
-Saves a photo to the camera roll.
+Saves a still photo or GIF to the camera roll.
 
 On Android and iOS, this supports web URLs, base64 encoded images 
 (e.g. data:image/jpeg;base64,...), and local files.
 On Android, all image formats supported by the user's photo viewer are supported.
+On iOS, most common image formats are supported.
 
-On iOS, [all image formats supported by SDWebImage are supported.](https://github.com/SDWebImage/SDWebImage#supported-image-formats)
-
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/SaveMedia.tsx)
 
 | Param         | Type                                                          |
 | ------------- | ------------------------------------------------------------- |
@@ -151,30 +171,7 @@ On Android and iOS, this supports web URLs, base64 encoded videos
 On Android, all video formats supported by the user's photo viewer are supported.
 On iOS, the supported formats are based on whatever iOS supports at the time.
 
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
-
-| Param         | Type                                                          |
-| ------------- | ------------------------------------------------------------- |
-| **`options`** | <code><a href="#mediasaveoptions">MediaSaveOptions</a></code> |
-
-**Returns:** <code>Promise&lt;<a href="#photoresponse">PhotoResponse</a>&gt;</code>
-
---------------------
-
-
-### saveGif(...)
-
-```typescript
-saveGif(options?: MediaSaveOptions | undefined) => Promise<PhotoResponse>
-```
-
-Saves an animated GIF to the camera roll.
-
-On Android and iOS, this supports web URLs, base64 encoded GIFs 
-(e.g. data:image/gif;base64,...), and local files.
-This only supports GIF files specifically.
-
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/SaveMedia.tsx)
 
 | Param         | Type                                                          |
 | ------------- | ------------------------------------------------------------- |
@@ -193,7 +190,7 @@ createAlbum(options: MediaAlbumCreate) => Promise<void>
 
 Creates an album.
 
-[Code Examples](https://github.com/capacitor-community/media/blob/master/example/src/components/CreateDemoAlbum.tsx)
+[Code Examples](https://github.com/capacitor-community/media/blob/main/example/src/components/CreateDemoAlbum.tsx)
 
 | Param         | Type                                                          |
 | ------------- | ------------------------------------------------------------- |
@@ -217,7 +214,7 @@ getting albums.
 
 Only available on Android.
 
-Code Examples: [basic](https://github.com/capacitor-community/media/blob/master/example/src/components/CreateDemoAlbum.tsx), [when saving media](https://github.com/capacitor-community/media/blob/master/example/src/components/SaveMedia.tsx)
+Code Examples: [basic](https://github.com/capacitor-community/media/blob/main/example/src/components/CreateDemoAlbum.tsx), [when saving media](https://github.com/capacitor-community/media/blob/main/example/src/components/SaveMedia.tsx)
 
 **Returns:** <code>Promise&lt;<a href="#albumspathresponse">AlbumsPathResponse</a>&gt;</code>
 
@@ -278,6 +275,14 @@ Code Examples: [basic](https://github.com/capacitor-community/media/blob/master/
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`key`**       | <code>"mediaType" \| "mediaSubtypes" \| "sourceType" \| "pixelWidth" \| "pixelHeight" \| "creationDate" \| "modificationDate" \| "isFavorite" \| "burstIdentifier"</code> |
 | **`ascending`** | <code>boolean</code>                                                                                                                                                      |
+
+
+#### MediaPath
+
+| Prop             | Type                | Description                |
+| ---------------- | ------------------- | -------------------------- |
+| **`path`**       | <code>string</code> | Path to media asset        |
+| **`identifier`** | <code>string</code> | Identifier for media asset |
 
 
 #### MediaAlbumResponse
@@ -376,7 +381,7 @@ Note the READ_MEDIA permissions -- these are **new in Android 13**!
 
 Go the the `example/` folder to play with an example app that should show all functionality of this plugin.
 
-<img style="width: 250px" src="https://github.com/capacitor-community/media/blob/master/example_app.png?raw=true" />
+<img style="width: 250px" src="https://github.com/capacitor-community/media/blob/main/example_app.png?raw=true" />
 
 ## Contributors ✨
 
@@ -396,9 +401,13 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tr>
     <td align="center"><a href="https://github.com/dragermrb"><img src="https://avatars.githubusercontent.com/u/11479696?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Manuel Rodríguez</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=dragermrb" title="Code">💻</a> <a href="#maintenance-dragermrb" title="Maintenance">🚧</a></td>
     <td align="center"><a href="https://github.com/Gr1zlY"><img src="https://avatars.githubusercontent.com/u/195971?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Michael</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=Gr1zlY" title="Code">💻</a></td>
-    <td align="center"><a href="https://www.mtda.me/"><img src="https://avatars.githubusercontent.com/u/2229994?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Matheus Davidson</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=matheusdavidson" title="Code">💻</a> <a href="https://github.com/capacitor-community/media/commits?author=matheusdavidson" title="Documentation">📖</a></td>
     <td align="center"><a href="https://linkedin.com/in/nisala"><img src="https://avatars.githubusercontent.com/u/7347290?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Nisala Kalupahana</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=nkalupahana" title="Code">💻</a> <a href="https://github.com/capacitor-community/media/commits?author=nkalupahana" title="Documentation">📖</a> <a href="#example-nkalupahana" title="Examples">💡</a> <a href="#maintenance-nkalupahana" title="Maintenance">🚧</a></td>
     <td align="center"><a href="https://rdlabo.jp/"><img src="https://avatars.githubusercontent.com/u/9690024?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Masahiko Sakakibara</b></sub></a><br /><a href="#maintenance-rdlabo" title="Maintenance">🚧</a></td>
+    <td align="center"><a href="https://ha6-6ru.hatenablog.com/"><img src="https://avatars.githubusercontent.com/u/20640973?v=4?s=75" width="75px;" alt=""/><br /><sub><b>ha6-6ru</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=ha6-6ru" title="Code">💻</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="http://www.mrfischer.de/"><img src="https://avatars.githubusercontent.com/u/2657649?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Stephan Fischer</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=stephan-fischer" title="Code">💻</a></td>
+    <td align="center"><a href="https://www.mtda.me/"><img src="https://avatars.githubusercontent.com/u/2229994?v=4?s=75" width="75px;" alt=""/><br /><sub><b>Matheus Davidson</b></sub></a><br /><a href="https://github.com/capacitor-community/media/commits?author=matheusdavidson" title="Code">💻</a> <a href="https://github.com/capacitor-community/media/commits?author=matheusdavidson" title="Documentation">📖</a></td>
   </tr>
 </table>
 
